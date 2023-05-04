@@ -1,9 +1,22 @@
-import { HStack, Heading, Icon, VStack, Text } from "native-base";
-import { TouchableOpacity } from "react-native";
+import BodySvg from "@assets/body.svg";
+import SeriesSvg from "@assets/series.svg";
+import RepetitionsSvg from "@assets/repetitions.svg";
+
 import { Feather } from "@expo/vector-icons";
+import { TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { AppNavigationRoutesProps } from "@routes/App.routes";
-import BodySvg from "@assets/body.svg";
+import {
+  HStack,
+  Heading,
+  Icon,
+  VStack,
+  Text,
+  Image,
+  Box,
+  ScrollView,
+} from "native-base";
+import { Button } from "@components/Button";
 
 export function Exercise() {
   const navigation = useNavigation<AppNavigationRoutesProps>();
@@ -35,6 +48,46 @@ export function Exercise() {
           </HStack>
         </HStack>
       </VStack>
+
+      <ScrollView>
+        <VStack p={8}>
+          <Image
+            w="full"
+            h={80}
+            source={{
+              uri: `https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTImkDIrR49046kLzGUdnUhP_g3_Iag1mH9-A&usqp=CAU`,
+            }}
+            alt="Nome do exercício"
+            mb={3}
+            resizeMode="cover"
+            rounded="lg"
+            overflow="hidden"
+          />
+
+          <Box bg="gray.600" rounded="md" pb={4} px={4}>
+            <HStack
+              alignItems="center"
+              justifyContent="space-between"
+              mb={6}
+              mt={5}
+            >
+              <HStack>
+                <SeriesSvg />
+                <Text color="gray.200" ml={2}>
+                  3 séries
+                </Text>
+              </HStack>
+              <HStack>
+                <RepetitionsSvg />
+                <Text color="gray.200" ml={2}>
+                  12 repetições
+                </Text>
+              </HStack>
+            </HStack>
+            <Button title="Marcar como realizado" />
+          </Box>
+        </VStack>
+      </ScrollView>
     </VStack>
   );
 }
