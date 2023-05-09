@@ -12,9 +12,27 @@ import {
 } from "native-base";
 import { useState } from "react";
 import { TouchableOpacity } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 
 export function Profile() {
   const [photoIsLoading, setPhotoIsLoading] = useState(false);
+  const [userPhoto, setUserPhoto] = useState(
+    "https://github.com/MateusFCD.png"
+  );
+
+  async function handleSelectImage() {
+    setPhotoIsLoading(true);
+    const photoSelected = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      allowsMultipleSelection: false,
+      quality: 1,
+      aspect: [4, 4],
+    });
+    setPhotoIsLoading(false);
+
+    if (photoSelected.canceled) return;
+  }
   return (
     <VStack flex={1}>
       <ScreenHeader title="Perfil" />
@@ -36,7 +54,7 @@ export function Profile() {
               size={33}
             />
           )}
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleSelectImage}>
             <Text
               color="green.500"
               fontWeight="bold"
