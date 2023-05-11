@@ -9,10 +9,12 @@ import {
   Skeleton,
   Text,
   Heading,
+  useToast,
 } from "native-base";
 import { useState } from "react";
-import { TouchableOpacity } from "react-native";
+import { Alert, TouchableOpacity } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 
 export function Profile() {
   const [photoIsLoading, setPhotoIsLoading] = useState(false);
@@ -20,18 +22,41 @@ export function Profile() {
     "https://github.com/MateusFCD.png"
   );
 
+  const toast = useToast();
+
   async function handleSelectImage() {
     setPhotoIsLoading(true);
-    const photoSelected = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      allowsMultipleSelection: false,
-      quality: 1,
-      aspect: [4, 4],
-    });
-    setPhotoIsLoading(false);
 
-    if (photoSelected.canceled) return;
+    try {
+      const photoSelected = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 1,
+        aspect: [4, 4],
+        allowsEditing: true,
+        allowsMultipleSelection: false,
+      });
+
+      if (photoSelected.canceled) return;
+
+      if (photoSelected.assets[0].uri) {
+        const photoInfo = await FileSystem.getInfoAsync(
+          photoSelected.assets[0].uri
+        );
+
+        if (photoInfo.exists && photoInfo.size / 1024 / 1024 > 5) {
+          return toast.show({
+            title: "A imagem deve ter no máximo 5MB",
+            placement: "top",
+            bgColor: "red.500",
+          });
+        }
+        setUserPhoto(photoSelected.assets[0].uri);
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setPhotoIsLoading(false);
+    }
   }
   return (
     <VStack flex={1}>
@@ -49,7 +74,7 @@ export function Profile() {
             />
           ) : (
             <UserPhoto
-              source={{ uri: "https://github.com/MateusFCD.png" }}
+              source={{ uri: userPhoto }}
               alt="Foto usuário"
               size={33}
             />
