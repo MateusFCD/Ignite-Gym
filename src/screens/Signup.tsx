@@ -6,9 +6,35 @@ import { Button } from "@components/Button";
 import { useNavigation } from "@react-navigation/native";
 import { AuthNavigatorRoutesProps } from "@routes/Auth.routes";
 import { useForm, Controller } from "react-hook-form";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+
+type FormDataProps = {
+  name: string;
+  email: string;
+  password: string;
+  password_confirm: string;
+};
+
+const schema = yup.object({
+  name: yup.string().required("Informe o nome"),
+  email: yup.string().email("E-mail inválido").required("Informe o e-mail"),
+  password: yup
+    .string()
+    .required("Informe a senha")
+    .min(6, "Mínimo de 6 caracteres"),
+  password_confirm: yup
+    .string()
+    .required("Confirme a senha")
+    .oneOf([yup.ref("password"), null], "As senhas devem ser iguais"),
+});
 
 export function SignUp() {
-  const { control, handleSubmit } = useForm();
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormDataProps>({ resolver: yupResolver(schema) });
 
   const navigation = useNavigation<AuthNavigatorRoutesProps>();
 
@@ -16,7 +42,7 @@ export function SignUp() {
     navigation.navigate("signIn");
   }
 
-  function handleSignUp(data: any) {
+  function handleSignUp(data: FormDataProps) {
     console.log(data);
   }
 
@@ -56,6 +82,7 @@ export function SignUp() {
                   placeholder="Nome"
                   onChangeText={onChange}
                   value={value}
+                  errorMessage={errors.name && errors.name.message}
                 />
               );
             }}
@@ -72,6 +99,7 @@ export function SignUp() {
                   autoCapitalize="none"
                   onChangeText={onChange}
                   value={value}
+                  errorMessage={errors.email && errors.email.message}
                 />
               );
             }}
@@ -87,6 +115,7 @@ export function SignUp() {
                   secureTextEntry
                   onChangeText={onChange}
                   value={value}
+                  errorMessage={errors.password && errors.password.message}
                 />
               );
             }}
@@ -101,6 +130,9 @@ export function SignUp() {
                   secureTextEntry
                   onChangeText={onChange}
                   value={value}
+                  errorMessage={
+                    errors.password_confirm && errors.password_confirm.message
+                  }
                 />
               );
             }}
@@ -112,7 +144,7 @@ export function SignUp() {
           />
         </Center>
 
-        <Center mt={24}>
+        <Center mt={16}>
           <Button
             title="Voltar para o login"
             variant="outline"
