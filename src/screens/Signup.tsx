@@ -1,4 +1,12 @@
-import { VStack, Image, Text, Center, Heading, ScrollView } from "native-base";
+import {
+  VStack,
+  Image,
+  Text,
+  Center,
+  Heading,
+  ScrollView,
+  useToast,
+} from "native-base";
 import BackgroundImg from "@assets/background.png";
 import LogoSvg from "@assets/logo.svg";
 import { Input } from "@components/Input";
@@ -8,6 +16,10 @@ import { AuthNavigatorRoutesProps } from "@routes/Auth.routes";
 import { useForm, Controller } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
+import axios from "axios";
+import { api } from "@services/api";
+import { Alert } from "react-native";
+import { AppError } from "@utils/AppError";
 
 type FormDataProps = {
   name: string;
@@ -26,7 +38,7 @@ const schema = yup.object({
   password_confirm: yup
     .string()
     .required("Confirme a senha")
-    .oneOf([yup.ref("password"), null], "As senhas devem ser iguais"),
+    .oneOf([yup.ref("password")], "As senhas devem ser iguais"),
 });
 
 export function SignUp() {
@@ -38,12 +50,28 @@ export function SignUp() {
 
   const navigation = useNavigation<AuthNavigatorRoutesProps>();
 
+  const toast = useToast();
+
   function handleNavigateToSignIn() {
     navigation.navigate("signIn");
   }
 
-  function handleSignUp(data: FormDataProps) {
-    console.log(data);
+  async function handleSignUp({ name, email, password }: FormDataProps) {
+    try {
+      const response = await api.post("/users", {
+        name,
+        email,
+        password,
+      });
+      console.log(response.data);
+    } catch (error) {
+      const isAppError = error instanceof AppError;
+      toast.show({
+        title: isAppError ? error.message : "Ocorreu um erro inesperado",
+        placement: "top",
+        bgColor: "red.500",
+      });
+    }
   }
 
   return (
