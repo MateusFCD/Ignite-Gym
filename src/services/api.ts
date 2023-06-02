@@ -6,14 +6,12 @@ const api = axios.create({
 });
 
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
     if (error.response && error.response.data) {
       return Promise.reject(new AppError(error.response.data.message));
     } else {
-      return Promise.reject(new AppError(error));
+      return Promise.reject(error);
     }
   }
 );
