@@ -4,7 +4,7 @@ import RepetitionsSvg from "@assets/repetitions.svg";
 
 import { Feather } from "@expo/vector-icons";
 import { TouchableOpacity } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { AppNavigationRoutesProps } from "@routes/App.routes";
 import {
   HStack,
@@ -15,15 +15,54 @@ import {
   Image,
   Box,
   ScrollView,
+  useToast,
 } from "native-base";
 import { Button } from "@components/Button";
+import { AppError } from "@utils/AppError";
+import { api } from "@services/api";
+import { ExerciseDTO } from "@dtos/ExerciseDTO";
+import { useEffect, useState } from "react";
+import { set } from "react-hook-form";
+
+type RouteParamsProps = {
+  exerciseId: string;
+};
 
 export function Exercise() {
+  const [exercise, setExercise] = useState<ExerciseDTO>({} as ExerciseDTO);
   const navigation = useNavigation<AppNavigationRoutesProps>();
+
+  const toast = useToast();
+
+  const route = useRoute();
+  const { exerciseId } = route.params as RouteParamsProps;
 
   function handleGoBack() {
     navigation.goBack();
   }
+
+  async function fetchExercise() {
+    try {
+      const response = await api.get(`/exercises/${exerciseId}`);
+      setExercise(response.data);
+    } catch (error) {
+      const isAppError = error instanceof AppError;
+      const title = isAppError
+        ? error.message
+        : "Não foi possível carregar os grupos musculares";
+
+      toast.show({
+        title,
+        placement: "top",
+        bgColor: "red.500",
+      });
+    }
+  }
+
+  useEffect(() => {
+    fetchExercise();
+  }, []);
+
   return (
     <VStack flex={1}>
       <VStack px={8} bg="gray.600" pt={12}>
@@ -37,13 +76,13 @@ export function Exercise() {
           alignItems="center"
         >
           <Heading color="gray.100" fontSize="lg" flexShrink={1}>
-            Levantamento terra
+            {exercise.name}
           </Heading>
 
           <HStack alignItems="center">
             <BodySvg />
             <Text color="gray.200" ml={1} textTransform="capitalize">
-              Pernas
+              {exercise.group}
             </Text>
           </HStack>
         </HStack>
@@ -55,7 +94,7 @@ export function Exercise() {
             w="full"
             h={80}
             source={{
-              uri: `https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTImkDIrR49046kLzGUdnUhP_g3_Iag1mH9-A&usqp=CAU`,
+              uri: `${api.defaults.baseURL}/exercise/thumb/${exercise.thumb}`,
             }}
             alt="Nome do exercício"
             mb={3}
@@ -74,13 +113,13 @@ export function Exercise() {
               <HStack>
                 <SeriesSvg />
                 <Text color="gray.200" ml={2}>
-                  3 séries
+                  {exercise.series} séries
                 </Text>
               </HStack>
               <HStack>
                 <RepetitionsSvg />
                 <Text color="gray.200" ml={2}>
-                  12 repetições
+                  {exercise.repetitions} repetições
                 </Text>
               </HStack>
             </HStack>
