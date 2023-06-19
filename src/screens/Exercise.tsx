@@ -22,13 +22,15 @@ import { AppError } from "@utils/AppError";
 import { api } from "@services/api";
 import { ExerciseDTO } from "@dtos/ExerciseDTO";
 import { useEffect, useState } from "react";
-import { set } from "react-hook-form";
+import { Loading } from "@components/Loading";
 
 type RouteParamsProps = {
   exerciseId: string;
 };
 
 export function Exercise() {
+  const [sendingRegister, setSendingRegister] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [exercise, setExercise] = useState<ExerciseDTO>({} as ExerciseDTO);
   const navigation = useNavigation<AppNavigationRoutesProps>();
 
@@ -43,6 +45,7 @@ export function Exercise() {
 
   async function fetchExercise() {
     try {
+      setIsLoading(true);
       const response = await api.get(`/exercises/${exerciseId}`);
       setExercise(response.data);
     } catch (error) {
@@ -56,12 +59,41 @@ export function Exercise() {
         placement: "top",
         bgColor: "red.500",
       });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleRegisterExercise() {
+    try {
+      setSendingRegister(true);
+      await api.post("/history", { exercise_id: exerciseId });
+      toast.show({
+        title: "Exercício registrado com sucesso",
+        placement: "top",
+        bgColor: "green.500",
+      });
+      //Não é necessário voltar para a tela de histórico é opcipnal
+      // navigation.navigate("history");
+    } catch (error) {
+      const isAppError = error instanceof AppError;
+      const title = isAppError
+        ? error.message
+        : "Não foi possível registrar o exercício";
+
+      toast.show({
+        title,
+        placement: "top",
+        bgColor: "red.500",
+      });
+    } finally {
+      setSendingRegister(false);
     }
   }
 
   useEffect(() => {
     fetchExercise();
-  }, []);
+  }, [exerciseId]);
 
   return (
     <VStack flex={1}>
@@ -88,20 +120,21 @@ export function Exercise() {
         </HStack>
       </VStack>
 
-      <ScrollView>
+      {isLoading ? (
+        <Loading />
+      ) : (
         <VStack p={8}>
-          <Image
-            w="full"
-            h={80}
-            source={{
-              uri: `${api.defaults.baseURL}/exercise/thumb/${exercise.thumb}`,
-            }}
-            alt="Nome do exercício"
-            mb={3}
-            resizeMode="cover"
-            rounded="lg"
-            overflow="hidden"
-          />
+          <Box rounded="lg" mb={3} overflow="hidden">
+            <Image
+              w="full"
+              h={80}
+              source={{
+                uri: `${api.defaults.baseURL}/exercise/demo/${exercise.demo}`,
+              }}
+              alt="Nome do exercício"
+              resizeMode="cover"
+            />
+          </Box>
 
           <Box bg="gray.600" rounded="md" pb={4} px={4}>
             <HStack
@@ -123,10 +156,14 @@ export function Exercise() {
                 </Text>
               </HStack>
             </HStack>
-            <Button title="Marcar como realizado" />
+            <Button
+              title="Marcar como realizado"
+              isLoading={sendingRegister}
+              onPress={handleRegisterExercise}
+            />
           </Box>
         </VStack>
-      </ScrollView>
+      )}
     </VStack>
   );
 }

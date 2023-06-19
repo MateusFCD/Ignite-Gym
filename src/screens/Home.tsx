@@ -137,6 +137,18 @@ export function Home() {
             )}
             showsVerticalScrollIndicator={false}
             _contentContainerStyle={{ paddingBottom: 20 }}
+            ListEmptyComponent={() => {
+              return (
+                <Text
+                  color="gray.200"
+                  fontSize="md"
+                  textAlign="center"
+                  mt="50%"
+                >
+                  Selecione um grupo muscular!
+                </Text>
+              );
+            }}
           />
         </VStack>
       )}

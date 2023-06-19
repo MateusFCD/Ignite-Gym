@@ -1,15 +1,45 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { HistoryCard } from "@components/HistoryCard";
 import { ScreenHeader } from "@components/ScreenHeader";
-import { Heading, VStack, SectionList, Text } from "native-base";
+import { Heading, VStack, SectionList, Text, useToast } from "native-base";
+import { AppError } from "@utils/AppError";
+import { set } from "react-hook-form";
+import { api } from "@services/api";
+import { useFocusEffect } from "@react-navigation/native";
 
 export function History() {
-  const [exercises, setExercises] = useState([
-    {
-      title: "26.08.22",
-      data: ["Puxada Frontal", "Puxada Costas", "Remada Baixa"],
-    },
-  ]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [exercises, setExercises] = useState([]);
+
+  const toast = useToast();
+
+  async function fetchHistory() {
+    try {
+      setIsLoading(true);
+      const response = await api.get("/history");
+      setExercises(response.data);
+    } catch (error) {
+      const isAppError = error instanceof AppError;
+      const title = isAppError
+        ? error.message
+        : "Não foi possível carregar o histórico de exercícios";
+
+      toast.show({
+        title,
+        placement: "top",
+        bgColor: "red.500",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchHistory();
+    }, [])
+  );
+
   return (
     <VStack flex={1}>
       <ScreenHeader title="Histórico de Exercícios" />
