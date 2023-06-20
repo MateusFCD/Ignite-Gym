@@ -6,10 +6,11 @@ import { AppError } from "@utils/AppError";
 import { set } from "react-hook-form";
 import { api } from "@services/api";
 import { useFocusEffect } from "@react-navigation/native";
+import { HistoryGroupByDayDTO } from "@dtos/HistoryGroupByDayDTO";
 
 export function History() {
   const [isLoading, setIsLoading] = useState(true);
-  const [exercises, setExercises] = useState([]);
+  const [exercises, setExercises] = useState<HistoryGroupByDayDTO[]>([]);
 
   const toast = useToast();
 
@@ -45,8 +46,8 @@ export function History() {
       <ScreenHeader title="Histórico de Exercícios" />
       <SectionList
         sections={exercises}
-        keyExtractor={(item) => item}
-        renderItem={({ item }) => <HistoryCard />}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => <HistoryCard data={item} />}
         renderSectionHeader={({ section }) => (
           <Heading color="gray.200" fontSize="md" mt={10} mb={3}>
             {section.title}
