@@ -15,14 +15,57 @@ import { useState } from "react";
 import { Alert, TouchableOpacity } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
+import { useForm, Controller } from "react-hook-form";
+import { useAuth } from "@hooks/useAuth";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { api } from "@services/api";
+import { AppError } from "@utils/AppError";
+
+type FormDataProps = {
+  name: string;
+  email: string;
+  password: string;
+  newPassword: string;
+  confirmNewPassword: string;
+};
+
+const schema = yup.object({
+  name: yup.string().required("Nome obrigatório"),
+  password: yup.string().required("Senha obrigatória"),
+  newPassword: yup
+    .string()
+    .min(6, "Mínimo de 6 caracteres")
+    .nullable()
+    .transform((value) => (value === "" ? null : value)),
+  confirmNewPassword: yup
+    .string()
+    .nullable()
+    .oneOf([yup.ref("newPassword"), null], "As senhas não coincidem")
+    .required("Confirmação de senha obrigatória")
+    .transform((value) => (value === "" ? null : value)),
+});
 
 export function Profile() {
+  const [isUpdating, setIsUpdating] = useState(false);
   const [photoIsLoading, setPhotoIsLoading] = useState(false);
   const [userPhoto, setUserPhoto] = useState(
     "https://github.com/MateusFCD.png"
   );
 
   const toast = useToast();
+  const { user, updateUserProfile } = useAuth();
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormDataProps>({
+    defaultValues: {
+      name: user.name,
+      email: user.email,
+    },
+    resolver: yupResolver(schema),
+  });
 
   async function handleSelectImage() {
     setPhotoIsLoading(true);
@@ -58,6 +101,36 @@ export function Profile() {
       setPhotoIsLoading(false);
     }
   }
+
+  async function handleUpdateProfile(data: FormDataProps) {
+    try {
+      setIsUpdating(true);
+
+      const userUpdated = user;
+      userUpdated.name = data.name;
+
+      await api.put("/users", { data });
+
+      await updateUserProfile(userUpdated);
+
+      toast.show({
+        title: "Perfil atualizado com sucesso",
+        placement: "top",
+        bgColor: "green.500",
+      });
+    } catch (error) {
+      const isAppError = error instanceof AppError;
+      const title = isAppError ? error.message : "Erro ao atualizar perfil";
+
+      toast.show({
+        title,
+        placement: "top",
+        bgColor: "red.500",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  }
   return (
     <VStack flex={1}>
       <ScreenHeader title="Perfil" />
@@ -91,21 +164,85 @@ export function Profile() {
             </Text>
           </TouchableOpacity>
 
-          <Input placeholder="Nome" bg="gray.600" />
-          <Input placeholder="E-mail" bg="gray.600" isDisabled />
+          <Controller
+            control={control}
+            name="name"
+            render={({ field: { value, onChange } }) => (
+              <Input
+                placeholder="Nome"
+                bg="gray.600"
+                onChangeText={onChange}
+                value={value}
+                errorMessage={errors.name?.message}
+              />
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { value, onChange } }) => (
+              <Input
+                placeholder="E-mail"
+                isDisabled
+                bg="gray.600"
+                onChangeText={onChange}
+                value={value}
+              />
+            )}
+          />
         </Center>
         <VStack px={10} mt={12} mb={9}>
           <Heading color="gray.200" fontSize="md" mb={2}>
             Alterar senha
           </Heading>
-          <Input placeholder="Senha antiga" bg="gray.600" secureTextEntry />
-          <Input placeholder="Nova senha" bg="gray.600" secureTextEntry />
-          <Input
-            placeholder="Confirme a nova senha"
-            bg="gray.600"
-            secureTextEntry
+
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange } }) => (
+              <Input
+                placeholder="Senha antiga"
+                bg="gray.600"
+                secureTextEntry
+                onChangeText={onChange}
+                errorMessage={errors.password?.message}
+              />
+            )}
           />
-          <Button title="Atualizar" mt={4} />
+          <Controller
+            control={control}
+            name="newPassword"
+            render={({ field: { onChange } }) => (
+              <Input
+                placeholder="Nova senha"
+                bg="gray.600"
+                secureTextEntry
+                onChangeText={onChange}
+                errorMessage={errors.newPassword?.message}
+              />
+            )}
+          />
+          <Controller
+            control={control}
+            name="confirmNewPassword"
+            render={({ field: { onChange } }) => (
+              <Input
+                placeholder="Confirme a nova senha"
+                bg="gray.600"
+                secureTextEntry
+                onChangeText={onChange}
+                errorMessage={errors.confirmNewPassword?.message}
+              />
+            )}
+          />
+
+          <Button
+            title="Atualizar"
+            mt={4}
+            onPress={handleSubmit(handleUpdateProfile)}
+            isLoading={isUpdating}
+          />
         </VStack>
       </ScrollView>
     </VStack>
